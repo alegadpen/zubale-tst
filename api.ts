@@ -29,7 +29,6 @@ export type PostMetaData = Pick<IPost, name | description | createdAt>;
 export async function getPosts() : Promise<IPosts> {
     try {
         const response = await axios.get(ENDPOINT);
-        console.log('resp', response);
         return response.data;
     } catch (error) {
         console.error("Error on posts:", error);
