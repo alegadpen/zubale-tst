@@ -5,114 +5,75 @@
  * @format
  */
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
+  FlatList,
   SafeAreaView,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   useColorScheme,
   View,
 } from 'react-native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+import {getPosts, IPost, IPosts} from "./api.ts";
+import { CardHeader } from "./components/CardHeader.component.tsx";
+import FastImage from "react-native-fast-image";
+import {PostInteractions} from "./components/PostInteractions.component.tsx";
+import {PostMeta} from "./components/PostMeta.component.tsx";
+import {generalStyles} from "./generalStyles.ts";
 
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const [posts, setPosts] = useState([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const data : IPosts = await getPosts();
+        setPosts(data);
+      } catch (error) {
+        setError("Failed to load feed.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+
+  const renderPictureCard = ({ item } : IPost) => {
+    return (
+        <View style={generalStyles.bottomSpace}>
+          <CardHeader avatar={item.avatar} name={item.name} location={item.location} />
+          <FastImage source={{ uri : item.image }} style={{ width: '100%', height: '400' }} resizeMode={FastImage.resizeMode.contain} />
+          <PostInteractions liked={item.liked} likes={item.likes} comments={item.comments} saved={item.saved} />
+          <PostMeta name={item.name} description={item.description} createdAt={item.createdAt} />
+        </View>
+    );
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
+    <SafeAreaView style={generalStyles.bg}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
       />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+      <View
+        contentInsetAdjustmentBehavior="automatic" style={generalStyles.bg}>
+        {!!loading && <Text style={generalStyles.bigText}>Cargando contenido..</Text>}
+        {!!error && <Text style={generalStyles.bigText}>Ocurrió un error</Text>}
+        {!!posts && posts.length > 0 &&
+          <FlatList data={posts} renderItem={renderPictureCard} keyExtractor={(item) => item.id.toString()} />
+        }
+      </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
 
 export default App;
